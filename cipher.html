@@ -11,7 +11,14 @@
         <title></title>
         <meta name="description" content="" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="" />
+        <style type="text/css">
+            input[type="text"] {
+                font-family: Consolas, Monaco, Lucida Console, Liberation Mono,
+                    DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New,
+                    monospace;
+                font-size: 1em;
+            }
+        </style>
         <script type="text/javascript">
             var numberspace = "0123456789";
             var characterspace = "abcdefghijklmnopqrstuvwxyz" + numberspace;
@@ -41,6 +48,10 @@
                     : characterspace.indexOf(character);
             }
 
+            function isSpace(character) {
+                return character == " ";
+            }
+
             function isValidCipher(cipher) {
                 isvalid = true;
 
@@ -56,7 +67,7 @@
                 return (
                     (numbersonly && numberspace.includes(character)) ||
                     (!numbersonly && characterspace.includes(character)) ||
-                    character == " "
+                    isSpace(character)
                 );
             }
 
@@ -67,11 +78,11 @@
                 numbersonly = false
             ) {
                 operation = decrypt ? -1 : 1;
-                inputerrortext = decrypt ? "Encrypted text" : "Plaintext";
+                inputerrortext = decrypt ? "Encrypted code" : "Backup code";
                 ciphertext = "";
 
                 if (!inputtext.length || !cipher.length) {
-                    alert(inputerrortext + " and ciphertext are required.");
+                    alert(inputerrortext + " and password are required.");
                     return "";
                 }
 
@@ -79,18 +90,22 @@
                 cipher = cipher.toLowerCase();
 
                 if (isValidCipher(cipher)) {
-                    for (var i = 0; i < inputtext.length; i++) {
-                        inputtextchar = inputtext.charAt(i);
+                    for (var i = 0, skipspaces = 0; i < inputtext.length; i++) {
+                        inputtextchar = inputtext.charAt(i + skipspaces);
+
+                        // Spaces pass through without applying the cipher
+                        while (isSpace(inputtextchar) && i < inputtext.length) {
+                            ciphertext += inputtextchar;
+                            skipspaces++;
+                            inputtextchar = inputtext.charAt(i + skipspaces);
+                        }
 
                         // Loop through the cipher, if it's not as long as the plaintext. Note,
                         // a repeating cipher is not the most robust cryptographic protection.
+                        if (i + skipspaces < inputtext.length) {
+                            cipherchar = cipher.charAt(i % cipher.length);
 
-                        cipherchar = cipher.charAt(i % cipher.length);
-
-                        if (isValidCharacter(inputtextchar, numbersonly)) {
-                            if (inputtextchar == " ") {
-                                ciphertext += inputtextchar;
-                            } else {
+                            if (isValidCharacter(inputtextchar, numbersonly)) {
                                 ciphertext += getCharacter(
                                     wrapIndex(
                                         getCharacterIndex(
@@ -98,25 +113,24 @@
                                             numbersonly
                                         ) +
                                             operation *
-                                                (getCharacterIndex(cipherchar) +
-                                                    1),
+                                                getCharacterIndex(cipherchar),
                                         numbersonly
                                     ),
                                     numbersonly
                                 );
-                            }
-                        } else {
-                            alert(
-                                inputerrortext +
-                                    " can only contain spaces and numbers" +
-                                    (!numbersonly ? " and letters." : ".")
-                            );
+                            } else {
+                                alert(
+                                    inputerrortext +
+                                        " can only contain spaces and numbers" +
+                                        (!numbersonly ? " and letters." : ".")
+                                );
 
-                            return "";
+                                return "";
+                            }
                         }
                     }
                 } else {
-                    alert("Cipher can only contain numbers and letters.");
+                    alert("Password can only contain numbers and letters.");
                 }
                 return ciphertext.toUpperCase();
             }
@@ -131,29 +145,27 @@
         <![endif]-->
 
         <form action="">
-            <label for="cipher">Cipher (key to encrypt with):</label>
+            <label for="cipher"
+                >Password (key used to encrypt or decrypt):</label
+            >
             <input type="text" id="cipher" name="cipher" /><br /><br />
-            <input type="checkbox" id="numbersonly" name="numbersonly" />
-            Numbers only for plaintext and encrypted text<br /><br />
-            <label for="plaintext">Plaintext (to encrypt):</label>
+            <label for="plaintext">Backup Code (to encrypt):</label>
             <input type="text" id="plaintext" name="plaintext" />
             <input
                 type="button"
                 value="Encrypt"
                 onclick="document.getElementById('ciphertext').value = computeCipher(document.getElementById('plaintext').value, 
                     document.getElementById('cipher').value, 
-                    false, 
-                    document.getElementById('numbersonly').checked);"
+                    false);"
             /><br /><br />
-            <label for="ciphertext">Encrypted Text:</label>
+            <label for="ciphertext">Encrypted Code (to decrypt):</label>
             <input type="text" id="ciphertext" name="ciphertext" />
             <input
                 type="button"
                 value="Decrypt"
                 onclick="document.getElementById('plaintext').value = computeCipher(document.getElementById('ciphertext').value, 
                     document.getElementById('cipher').value, 
-                    true, 
-                    document.getElementById('numbersonly').checked);"
+                    true);"
             />
         </form>
     </body>
